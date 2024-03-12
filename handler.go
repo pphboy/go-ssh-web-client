@@ -30,6 +30,9 @@ var terminalModes = ssh.TerminalModes{
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  maxMessageSize,
 	WriteBufferSize: maxMessageSize,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 type windowSize struct {
@@ -236,6 +239,7 @@ type sshHandler struct {
 
 // webSocket handles WebSocket requests for SSH from the clients.
 func (h *sshHandler) webSocket(w http.ResponseWriter, req *http.Request) {
+
 	conn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		log.Println("upgrader.Upgrade:", err)

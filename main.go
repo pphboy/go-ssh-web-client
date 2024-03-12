@@ -64,14 +64,27 @@ func main() {
 		log.Fatal("could not parse config file: ", err)
 	} else {
 		addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-		if password != "" {
+		if cfg.Password != "" {
 			handler = &sshHandler{addr: addr, user: cfg.User, secret: cfg.Password}
 		} else {
 			handler = &sshHandler{addr: addr, user: cfg.User, keyfile: cfg.IdentityFile}
 		}
+
 	}
 
 	http.Handle("/", http.FileServer(http.Dir("./front/")))
-	http.HandleFunc("/web-socket/ssh", handler.webSocket)
+	http.HandleFunc("/web-socket/ssh", cors(handler.webSocket))
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func cors(f http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")                                                            // 允许访问所有域，可以换成具体url，注意仅具体url才能带cookie信息
+		w.Header().Add("Access-Control-Allow-Headers", "Content-Type,AccessToken,X-CSRF-Token, Authorization, Token") //header的类型
+		w.Header().Add("Access-Control-Allow-Credentials", "true")                                                    //设置为true，允许ajax异步请求带cookie信息，注意前端也要设置withCredentials: true
+		w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")                             //允许请求方法
+		w.Header().Set("content-type", "application/json;charset=UTF-8")                                              //返回数据格式是json
+
+		f(w, r)
+	}
 }
